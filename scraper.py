@@ -34,15 +34,15 @@ def main():
 
     monster_stat_blocks = reduce(lambda x, y: x+y, stat_block_by_arch_type)
 
-    bullshit = [
+    full_monster_list = [
         build_monster_attributes(stat_block, index + 1)
         for index, stat_block in enumerate(monster_stat_blocks)
     ]
 
     with open('monsters_hp.json', 'w') as outfile:
-        json.dump(bullshit, outfile)
+        json.dump(full_monster_list, outfile)
 
-    print(bullshit)
+    print(full_monster_list)
 
 
 def stat_block(content):
