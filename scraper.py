@@ -24,12 +24,12 @@ def main():
 
     individual_monster_pages = [
         (lambda url: requests.get(url).text)(url)
-        for url in [arch_type_links[0]]
+        for url in arch_type_links
     ]
 
     stat_block_by_arch_type = [
         stat_block(page)
-        for page in [individual_monster_pages[0]]
+        for page in individual_monster_pages
     ]
 
     monster_stat_blocks = reduce(lambda x, y: x+y, stat_block_by_arch_type)
@@ -88,6 +88,27 @@ def monster_type(monster_attributes, line_parts):
     update_type_parts(line_parts, monster_attributes)
 
 
+def monster_ac(monster_attributes, line_text):
+    line_parts = line_text.split(';')
+    print(monster_attributes)
+    print(line_parts)
+    monster_attributes['eac'] = line_parts[0].strip('EAC ')
+    monster_attributes['kac'] = line_parts[1].strip(' KAC')
+
+
+def monster_stats(monster_attributes, line_text):
+    line_parts = line_text.split(';')
+    monster_attributes['stats'] = {}
+
+    # any of these could be a dash
+    monster_attributes['stats']['str'] = line_parts[0].strip('Str +')
+    monster_attributes['stats']['dex'] = line_parts[1].strip('Dex +')
+    monster_attributes['stats']['con'] = line_parts[2].strip('Con +')
+    monster_attributes['stats']['int'] = line_parts[3].strip('Int +')
+    monster_attributes['stats']['wis'] = line_parts[4].strip('Wis +')
+    monster_attributes['stats']['cha'] = line_parts[5].strip('Cha +')
+
+
 def update_type_parts(parts, result):
     if len(parts) == 3:
         result['alignment'] = parts[0].upper()
@@ -111,7 +132,7 @@ def attach_xp(monster_attributes, line_text):
         monster_attributes['exp'] = monster_exp(line_text)
 
 
-def attach_alignment(monster_attributes, line_text, stat_block):
+def attach_alignment_etc(monster_attributes, line_text, stat_block):
     alignments = ["LG", "NG", "CG", "LN", "N", "CN", "LE", "NE", "CE"]
     line_parts = line_text.split(' ')
 
@@ -120,7 +141,7 @@ def attach_alignment(monster_attributes, line_text, stat_block):
 
 
 def attach_hp(monster_attributes, line_text):
-    if 'HP' in line_text:
+    if 'HP' in line_text and 'hp' not in monster_attributes:
         monster_attributes['hp'] = monster_hp(line_text)
 
 
@@ -136,6 +157,16 @@ def attach_name(monster_attributes, stat_block):
     monster_attributes['name'] = stat_block.h2.text
 
 
+def attach_ac(monster_attributes, line_text):
+    if 'EAC' in line_text and 'eac' not in monster_attributes:
+        monster_ac(monster_attributes, line_text)
+
+
+def attach_stats(monster_attribues, line_text):
+    if 'Str' in line_text:
+        monster_stats(monster_attribues, line_text)
+
+
 def build_monster_attributes(stat_block, id):
     stat_lines = stat_block.find_all('p', class_='stat-line')
     monster_attributes = {}
@@ -148,8 +179,10 @@ def build_monster_attributes(stat_block, id):
         attach_id(monster_attributes, index)
         attach_cr(monster_attributes, stat_block)
         attach_xp(monster_attributes, line_text)
-        attach_alignment(monster_attributes, line_text, stat_block)
+        attach_alignment_etc(monster_attributes, line_text, stat_block)
         attach_hp(monster_attributes, line_text)
+        attach_ac(monster_attributes, line_text)
+        attach_stats(monster_attributes, line_text)
 
     return monster_attributes
 
