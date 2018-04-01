@@ -13,72 +13,94 @@ content = page.text
 soup = BeautifulSoup(content, 'html.parser')
 links = soup.table.find_all('a')
 
-monster_stuff = [
+all_monster_links = [
     (lambda tag, url: url+tag['href'])(tag, ROOT_URL)
     for tag in links
 ]
 
-monster_filter = [href for href in monster_stuff if "#" not in href]
+arch_type_links = [href for href in all_monster_links if "#" not in href]
 
 individual_monster_pages = [
     (lambda url: requests.get(url).text)(url)
-    for url in [monster_filter[3]]
+    for url in [arch_type_links[2]]
 ]
 
 
-def find_the_thing(content):
+def stat_block(content):
     soup = BeautifulSoup(content, 'html.parser')
     return soup.find_all('section', class_='stat-block')
 
-monster_stats = [
-    find_the_thing(page)
+stat_block_by_arch_type = [
+    stat_block(page)
     for page in [individual_monster_pages[0]]
 ]
 
-flattened_stats = reduce(lambda x, y: x+y, monster_stats)
+monster_stat_blocks = reduce(lambda x, y: x+y, stat_block_by_arch_type)
 
 
-def build_result(thing, id):
-    result = {}
-
-    result['id'] = id
-
-    result['name'] = thing.h2.text
-    print(result['name'])
-
-    hp_container = thing.find('span', text=re.compile('HP'))
+def monster_hp(stat_block):
+    hp_container = stat_block.find('span', text=re.compile('HP'))
     stripped_hp = hp_container.parent.text.strip('HP ').split(';')[0]
-    result['hp'] = int(stripped_hp)
+    return int(stripped_hp)
 
-    cr_container = thing.find('span', class_='challenge-rating').text
+
+def monster_cr(stat_block):
+    cr_container = stat_block.find('span', class_='challenge-rating').text
     stripped_cr = cr_container.strip('CR ')
 
     if '/' in stripped_cr:
-        result['cr'] = get_cr(stripped_cr)
+        return cr_from_parts(stripped_cr)
     elif '-' in stripped_cr:
-        result['cr'] = 2
+        return 2
     else:
-        result['cr'] = int(stripped_cr)
+        return int(stripped_cr)
 
-    exp = thing.find('strong').text
+
+def cr_from_parts(value):
+    parts = value.split('/')
+    numeric_parts = [(lambda x: int(x))(x) for x in parts]
+    divided = numeric_parts[0] / numeric_parts[1]
+    return "{0:.2f}".format(divided)
+
+
+def monster_exp(stat_block):
+    exp = stat_block.find('strong').text
 
     if 'XP' in exp:
-        result['exp'] = int(exp.strip('XP ').replace(',', ''))
+        return int(exp.strip('XP ').replace(',', ''))
     else:
-        result['exp'] = 600
+        return 600
 
-    type_container = thing.find_all('p')
+
+def monster_type(monster_attributes, stat_block):
+    type_container = stat_block.find_all('p')
     index = 1
-    if 'constituent' in result['name']:
+    if 'constituent' in monster_attributes['name']:
         index = 0
 
-    type_stuff = type_container[index].text
-    get_type_parts(type_stuff, result)
-
-    return result
+    type_text = type_container[index].text
+    update_type_parts(type_text, monster_attributes)
 
 
-def get_type_parts(value, result):
+def build_monster_attributes(stat_block, id):
+    monster_attributes = {}
+
+    monster_attributes['id'] = id
+
+    monster_attributes['name'] = stat_block.h2.text
+
+    monster_attributes['hp'] = monster_hp(stat_block)
+
+    monster_attributes['cr'] = monster_cr(stat_block)
+
+    monster_attributes['exp'] = monster_exp(stat_block)
+
+    monster_type(monster_attributes, stat_block)
+
+    return monster_attributes
+
+
+def update_type_parts(value, result):
     parts = value.split(' ')
     if len(parts) == 3:
         result['alignment'] = parts[0].upper()
@@ -96,26 +118,10 @@ def get_type_parts(value, result):
         result['type'] = parts[3].title()
         return result
 
-
-def get_cr(value):
-    parts = value.split('/')
-    numeric_parts = [(lambda x: int(x))(x) for x in parts]
-    divided = numeric_parts[0] / numeric_parts[1]
-    return "{0:.2f}".format(divided)
-
 bullshit = [
-    build_result(thing, index + 1)
-    for index, thing in enumerate(flattened_stats)
+    build_monster_attributes(stat_block, index + 1)
+    for index, stat_block in enumerate(monster_stat_blocks)
 ]
 
-# with open('monsters_hp.json', 'w') as outfile:
-#     json.dump(bullshit, outfile)
-
-print(bullshit)
-
-
-
-
-# for url in monster_filter:
-#     page = requests.get(url)
-#     page.text
+with open('monsters_hp.json', 'w') as outfile:
+    json.dump(bullshit, outfile)
