@@ -1,1 +1,1 @@
-[{"hp": 48, "name": "Aeon Guard"}, {"hp": 102, "name": "Aeon Guard Specialist"}];
+[{"name": "Aeon Guard", "exp": 800, "type": "Humanoid", "id": 17, "alignment": "LE", "size": "Medium", "cr": 3, "hp": 48}, {"name": "Aeon Guard Specialist", "exp": 3200, "type": "Humanoid", "id": 19, "alignment": "LE", "size": "Medium", "cr": 7, "hp": 102}]
