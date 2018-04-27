@@ -98,15 +98,14 @@ def monster_ac(monster_attributes, line_text):
 
 def monster_stats(monster_attributes, line_text):
     line_parts = line_text.split(';')
-    monster_attributes['stats'] = {}
 
     # any of these could be a dash
-    monster_attributes['stats']['str'] = line_parts[0].strip('Str +')
-    monster_attributes['stats']['dex'] = line_parts[1].strip('Dex +')
-    monster_attributes['stats']['con'] = line_parts[2].strip('Con +')
-    monster_attributes['stats']['int'] = line_parts[3].strip('Int +')
-    monster_attributes['stats']['wis'] = line_parts[4].strip('Wis +')
-    monster_attributes['stats']['cha'] = line_parts[5].strip('Cha +')
+    monster_attributes['str'] = line_parts[0].strip('Str +')
+    monster_attributes['dex'] = line_parts[1].strip('Dex +')
+    monster_attributes['con'] = line_parts[2].strip('Con +')
+    monster_attributes['int'] = line_parts[3].strip('Int +')
+    monster_attributes['wis'] = line_parts[4].strip('Wis +')
+    monster_attributes['cha'] = line_parts[5].strip('Cha +')
 
 
 def update_type_parts(parts, result):
